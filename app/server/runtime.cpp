@@ -893,7 +893,14 @@ engine::runtime::TaskRequest build_openai_transcription_request(
     std::string language;
     if (const auto * value = body.find("language")) {
         language = value->as_string();
-        request.options["language"] = language;
+        // The WebUI always sends this field for ASR, empty when the user wants
+        // auto-detection. Forwarding "" as a request option makes models whose
+        // spec declares no `language` option (Parakeet TDT) reject the request,
+        // so only pass it through when the caller actually chose a language.
+        // Every other transcription entry point already guards the same way.
+        if (!language.empty()) {
+            request.options["language"] = language;
+        }
     }
     std::string context;
     if (const auto * value = body.find("text")) {
